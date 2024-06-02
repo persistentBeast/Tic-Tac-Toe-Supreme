@@ -5,6 +5,7 @@ import com.hazelcast.internal.json.JsonObject;
 import com.persistent.tictactoe.clients.DynamoDb;
 import com.persistent.tictactoe.clients.HzClient;
 import com.persistent.tictactoe.constants.Constants;
+import com.persistent.tictactoe.dao.MemoryDbDao;
 import com.persistent.tictactoe.models.PlayingInterest;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Handler;
@@ -49,6 +50,7 @@ public class PlayerMatcherVerticle extends AbstractVerticle {
 
                     JsonObject jsonObject1 = new JsonObject();
                     jsonObject1.add("user_id", p1.getUserId());
+                    jsonObject1.add("user_name", p1.getUserName());
                     jsonObject1.add("game_id", gameId);
                     jsonObject1.add("opponent_name", p2.getUserName());
                     jsonObject1.add("symbol", 0);
@@ -56,6 +58,7 @@ public class PlayerMatcherVerticle extends AbstractVerticle {
 
                     JsonObject jsonObject2 = new JsonObject();
                     jsonObject2.add("user_id", p2.getUserId());
+                    jsonObject2.add("user_name", p2.getUserName());
                     jsonObject2.add("game_id", gameId);
                     jsonObject2.add("opponent_name", p1.getUserName());
                     jsonObject2.add("symbol", 1);
@@ -82,29 +85,77 @@ public class PlayerMatcherVerticle extends AbstractVerticle {
                     log.info(matchedUsers.size() + " players matched");
                 }
 
-                List<WriteBatch> writeBatches = new ArrayList<>();
-                DynamoDbTable<PlayingInterest> mappedTable = DynamoDb.getDynamoDbClient().table(Constants.DDB_TABLE_PLAYING_INTEREST,
-                        TableSchema.fromBean(PlayingInterest.class));
-
-                for (String userId : matchedUsers) {
-                    writeBatches.add(WriteBatch.builder(PlayingInterest.class)
-                            .addDeleteItem(Key.builder()
-                                    .partitionValue(userId)
-                                    .build())
-                            .mappedTableResource(mappedTable)
-                            .build());
-                }
-                BatchWriteItemEnhancedRequest batchWriteItemEnhancedRequest = BatchWriteItemEnhancedRequest.builder()
-                        .writeBatches(writeBatches)
-                        .build();
-                BatchWriteResult res = DynamoDb.getDynamoDbClient().batchWriteItem(batchWriteItemEnhancedRequest);
-                ITopic<JsonObject> topic = HzClient.getHzClient().getTopic(Constants.VERTX_ADDRESS_NEW_GAME);
-                for (String gameId : gameIds) {
-                    matchedGames.get(gameId).forEach(topic::publish);
-                }
+                //Post Process after matching
+                deleteWaitingUsers(matchedUsers);
+                createStateInMemoryDb(matchedGames, gameIds);
+                attachHzConsumerForPlayerEvents(gameIds);
+                publishNewGamesToPlayers(matchedGames, gameIds);
 
             }
         });
+
+    }
+
+    private void attachHzConsumerForPlayerEvents(List<String> gameIds) {
+        for (String gameId : gameIds) {
+            vertx.eventBus().publish("NEW_GAME", gameId);
+        }
+    }
+
+    private void publishNewGamesToPlayers(Map<String, List<JsonObject>> matchedGames, List<String> gameIds) {
+        ITopic<JsonObject> topic = HzClient.getHzClient().getTopic(Constants.VERTX_ADDRESS_NEW_GAME);
+        for (String gameId : gameIds) {
+            matchedGames.get(gameId).forEach(topic::publish);
+        }
+    }
+
+    private void deleteWaitingUsers(List<String> matchedUsers) {
+
+        List<WriteBatch> writeBatches = new ArrayList<>();
+        DynamoDbTable<PlayingInterest> mappedTable = DynamoDb.getDynamoDbClient().table(Constants.DDB_TABLE_PLAYING_INTEREST,
+                TableSchema.fromBean(PlayingInterest.class));
+
+        for (String userId : matchedUsers) {
+            writeBatches.add(WriteBatch.builder(PlayingInterest.class)
+                    .addDeleteItem(Key.builder()
+                            .partitionValue(userId)
+                            .build())
+                    .mappedTableResource(mappedTable)
+                    .build());
+        }
+        BatchWriteItemEnhancedRequest batchWriteItemEnhancedRequest = BatchWriteItemEnhancedRequest.builder()
+                .writeBatches(writeBatches)
+                .build();
+        BatchWriteResult res = DynamoDb.getDynamoDbClient().batchWriteItem(batchWriteItemEnhancedRequest);
+
+    }
+
+    private void createStateInMemoryDb(Map<String, List<JsonObject>> matchedGames, List<String> gameIds) {
+
+        MemoryDbDao memoryDbDao = new MemoryDbDao();
+
+        for (String gameId : gameIds) {
+            Map<String, String> gameStateMap = new HashMap<>();
+            gameStateMap.put("p1", matchedGames.get(gameId).getFirst().getString("user_id", null));
+            gameStateMap.put("p2", matchedGames.get(gameId).getLast().getString("user_id", null));
+            gameStateMap.put("p1_name", matchedGames.get(gameId).getFirst().getString("user_name", null));
+            gameStateMap.put("p2_name", matchedGames.get(gameId).getLast().getString("user_name", null));
+            gameStateMap.put("p1_status", "DIS-CONNECTED");
+            gameStateMap.put("p2_status", "DIS-CONNECTED");
+            gameStateMap.put("p1_last_ack", String.valueOf(-1));
+            gameStateMap.put("p2_last_ack", String.valueOf(-1));
+            gameStateMap.put("p1_symbol", String.valueOf(matchedGames.get(gameId).getFirst().get("symbol")));
+            gameStateMap.put("p2_symbol", String.valueOf(matchedGames.get(gameId).getLast().get("symbol")));
+            gameStateMap.put("game_turn", matchedGames.get(gameId).getFirst().getString("user_id", null));
+            gameStateMap.put("game_state", "---------");
+            gameStateMap.put("game_status", "LOADING");
+            gameStateMap.put("created_at", String.valueOf(System.currentTimeMillis()));
+            gameStateMap.put("updated_at", String.valueOf(System.currentTimeMillis()));
+
+            // add to memoryDb
+            memoryDbDao.upsertHashRecord2("Game::" + gameId, gameStateMap);
+
+        }
 
     }
 

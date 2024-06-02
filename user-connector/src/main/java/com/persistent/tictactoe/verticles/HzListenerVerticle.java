@@ -40,7 +40,7 @@ public class HzListenerVerticle extends AbstractVerticle {
             topic.addMessageListener(new MessageListener<JsonObject>() {
                 @Override
                 public void onMessage(Message<JsonObject> message) {
-                    io.vertx.core.json.JsonObject msg = new io.vertx.core.json.JsonObject(message.getMessageObject().asString());
+                    io.vertx.core.json.JsonObject msg = new io.vertx.core.json.JsonObject(message.getMessageObject().toString());
                     vertx.eventBus().publish(gameId, msg);
                 }
             });

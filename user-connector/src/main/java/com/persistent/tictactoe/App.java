@@ -91,9 +91,12 @@ public class App extends AbstractVerticle {
     private void webSocketHandler(ServerWebSocket ws, String id) {
 
         ws.textMessageHandler((msg) -> {
-            JsonObject clientMessage = new JsonObject(msg);
-            String gameId = clientMessage.getString("game_id");
-            HzClient.getHzClient().getTopic("SERVER" + "_" + gameId).publish(clientMessage);
+            JsonObject obj = new JsonObject(msg);
+            com.hazelcast.internal.json.JsonObject clientMessage = new com.hazelcast.internal.json.JsonObject();
+            clientMessage.add("type", obj.getString("type"));
+            clientMessage.add("game_id", obj.getString("game_id"));
+            clientMessage.add("user_id", obj.getString("user_id"));
+            HzClient.getHzClient().getTopic("SERVER" + "_" + obj.getString("game_id")).publish(clientMessage);
         });
 
     }

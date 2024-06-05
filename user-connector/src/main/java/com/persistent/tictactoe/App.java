@@ -96,6 +96,10 @@ public class App extends AbstractVerticle {
             clientMessage.add("type", obj.getString("type"));
             clientMessage.add("game_id", obj.getString("game_id"));
             clientMessage.add("user_id", obj.getString("user_id"));
+            if(obj.getString("type").equals("activity")){
+                clientMessage.add("move", obj.getInteger("move"));
+                clientMessage.add("move_id", obj.getString("move_id"));
+            }
             HzClient.getHzClient().getTopic("SERVER" + "_" + obj.getString("game_id")).publish(clientMessage);
         });
 

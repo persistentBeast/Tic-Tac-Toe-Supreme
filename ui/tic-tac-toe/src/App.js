@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './App.css';
+import clickSound from './click.wav'; // Adjust the path as necessary
+import completionSound from './winner.wav'; // Adjust the path as necessary
 
 const Loader = () => {
   return (
@@ -21,9 +23,10 @@ const App = () => {
   const [status, setStatus] = useState(null);
   const [gameState, setGameState] = useState("---------");
   const [message, setMessage] = useState("");
+  const [showWinner, setShowWinner] = useState(false);
   const ws = useRef(null);
-  const apiUrl = process.env.REACT_APP_API_URL;
-
+  const clickAudio = useRef(new Audio(clickSound));
+  const completionAudio = useRef(new Audio(completionSound));
 
   useEffect(() => {
     if (gameId) {
@@ -49,11 +52,16 @@ const App = () => {
           setGameState(message.state);
           setStatus(message.status);
           if (message.status === 'LOADING') {
+            setLoading(true);
             setMessage('Waiting for other player');
           } else if (message.status === 'LIVE') {
+            setLoading(false);
             setMessage('');
           } else if (message.status === 'COMPLETED') {
+            setLoading(false);
             setMessage(`Game Over. Winner: ${message.winner}`);
+            setShowWinner(true);
+            completionAudio.current.play();
             ws.current.close();
           }
         }
@@ -95,6 +103,7 @@ const App = () => {
 
   const handleMove = (index) => {
     if (status === 'LIVE' && gameState[index] === '-') {
+      clickAudio.current.play();
       ws.current.send(JSON.stringify({
         type: 'activity',
         user_id: userId,
@@ -103,6 +112,13 @@ const App = () => {
         move_id: `${userId}-${index}`
       }));
     }
+  };
+
+  const resetGame = () => {
+    setGameId(null);
+    setGameState("---------");
+    setMessage("");
+    setShowWinner(false);
   };
 
   return (
@@ -115,24 +131,31 @@ const App = () => {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           className="username-input"
+          disabled={loading}
         />
-        <button className="start-btn" onClick={startGame}>Start Game</button>
+        <button className="start-btn" onClick={startGame} disabled={loading}>Start Game</button>
       </div>
       {loading && <Loader />}
       {message && <p className="message">{message}</p>}
-      {gameId && (
+      {gameId && !loading && (
         <div className="game-container">
           <div className="player-info">
-            <p className="info">Your Symbol: {symbol}</p>
+            <p className="info">Your Symbol: {symbol === 1 ? 'X' : 'O'}</p>
             <p className="info">Opponent: {opponentName}</p>
           </div>
           <div className="board">
             {gameState.split('').map((cell, index) => (
               <div key={index} className="cell" onClick={() => handleMove(index)}>
-                {cell !== '-' && <span className={cell === 'X' ? 'cross' : 'circle'}>{cell}</span>}
+                {cell !== '-' && <span className={cell === '1' ? 'cross' : 'circle'}>{cell === '1' ? 'X' : 'O'}</span>}
               </div>
             ))}
           </div>
+        </div>
+      )}
+      {showWinner && (
+        <div className="winner-popup">
+          <p>{message}</p>
+          <button className="reset-btn" onClick={resetGame}>Start New Game</button>
         </div>
       )}
     </div>

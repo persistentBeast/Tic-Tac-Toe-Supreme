@@ -66,10 +66,10 @@ public class PlayerEventsListenerVerticle extends AbstractVerticle {
         String gameId = event.getString("game_id");
         String userId = event.getString("user_id");
         String moveId = event.getString("move_id");
-        activityAckObject.add("type", "activity-ack");
-        activityAckObject.add("move_id", moveId);
-        activityAckObject.add("user_id", userId);
-        activityAckObject.add("game_id", gameId);
+        activityAckObject.set("type", "activity-ack");
+        activityAckObject.set("move_id", moveId);
+        activityAckObject.set("user_id", userId);
+        activityAckObject.set("game_id", gameId);
 
         Map<String, String> gameState = memoryDbDao.getHashRecordAllFields("Game::" + gameId);
         String turnOfUserId = gameState.get("game_turn");
@@ -85,21 +85,21 @@ public class PlayerEventsListenerVerticle extends AbstractVerticle {
         }
 
         if (gameState.get("game_status").equals("LOADING")) {
-            activityAckObject.add("status", "FAIL");
-            activityAckObject.add("fail_reason", "Game is in loading state!");
+            activityAckObject.set("status", "FAIL");
+            activityAckObject.set("fail_reason", "Game is in loading state!");
         } else if (gameState.get("game_status").equals("COMPLETED")) {
-            activityAckObject.add("status", "FAIL");
-            activityAckObject.add("fail_reason", "Game is over!");
+            activityAckObject.set("status", "FAIL");
+            activityAckObject.set("fail_reason", "Game is over!");
         } else if (!userId.equals(turnOfUserId)) {
-            activityAckObject.add("status", "FAIL");
-            activityAckObject.add("fail_reason", "Its not your turn!");
+            activityAckObject.set("status", "FAIL");
+            activityAckObject.set("fail_reason", "Its not your turn!");
         } else {
             int move = event.getInteger("move");
             if (move < 0 || move > 8 || gameBoard.get(move) != -1) {
-                activityAckObject.add("status", "FAIL");
-                activityAckObject.add("fail_reason", "Invalid move!");
+                activityAckObject.set("status", "FAIL");
+                activityAckObject.set("fail_reason", "Invalid move!");
             } else {
-                gameBoard.add(move, getPlayerSymbol(gameState, userId));
+                gameBoard.set(move, getPlayerSymbol(gameState, userId));
                 StringBuilder newGameStateString = new StringBuilder(9);
                 for (int i = 0; i < 9; i++) {
                     if (gameBoard.get(i) == -1) newGameStateString.append("-");
@@ -109,7 +109,7 @@ public class PlayerEventsListenerVerticle extends AbstractVerticle {
                 }
                 gameState.put("game_turn", getOpponentPlayerId(gameState, userId));
                 gameState.put("game_state", newGameStateString.toString());
-                activityAckObject.add("status", "SUCCESS");
+                activityAckObject.set("status", "SUCCESS");
             }
         }
         HzClient.getHzClient().getTopic(gameId).publish(activityAckObject);
@@ -147,18 +147,18 @@ public class PlayerEventsListenerVerticle extends AbstractVerticle {
         }
 
         com.hazelcast.internal.json.JsonObject stateUpdateEvent = new com.hazelcast.internal.json.JsonObject();
-        stateUpdateEvent.add("type", "state");
-        stateUpdateEvent.add("game_id", gameId);
-        stateUpdateEvent.add("state", gameState.get("game_state"));
-        stateUpdateEvent.add("status", gameState.get("game_status"));
+        stateUpdateEvent.set("type", "state");
+        stateUpdateEvent.set("game_id", gameId);
+        stateUpdateEvent.set("state", gameState.get("game_state"));
+        stateUpdateEvent.set("status", gameState.get("game_status"));
 
         if (gameState.get("game_status").equals("COMPLETED")) {
-            stateUpdateEvent.add("winner", gameState.get("winner"));
+            stateUpdateEvent.set("winner", gameState.get("winner"));
 
         }
 
         if (gameState.get("game_status").equals("LOADING")) {
-            stateUpdateEvent.add("loading_reason", String.valueOf("P1 : " + gameState.get("p1_status") +
+            stateUpdateEvent.set("loading_reason", String.valueOf("P1 : " + gameState.get("p1_status") +
                     " P2 : " + gameState.get("p2_status")));
         }
 

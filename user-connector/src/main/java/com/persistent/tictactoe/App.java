@@ -30,7 +30,7 @@ public class App extends AbstractVerticle {
 
         // Configure CORS
         CorsHandler corsHandler = CorsHandler.create("*")
-                .addOrigin("http://localhost:3000")
+                .addOrigin("*")
                 .allowedMethod(io.vertx.core.http.HttpMethod.GET)
                 .allowedMethod(io.vertx.core.http.HttpMethod.POST)
                 .allowedMethod(io.vertx.core.http.HttpMethod.PUT)

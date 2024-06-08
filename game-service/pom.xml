@@ -82,8 +82,34 @@
   </dependencies>
 
   <build>
-    <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>3.1.1</version>
+          <configuration>
+            <descriptorRefs>
+              <descriptorRef>jar-with-dependencies</descriptorRef>
+            </descriptorRefs>
+            <archive>
+              <manifest>
+                <addClasspath>true</addClasspath>
+                <mainClass>com.persistent.tictactoe.App</mainClass>
+              </manifest>
+            </archive>
+          </configuration>
+
+          <executions>
+            <execution>
+              <id>assemble-all</id>
+              <phase>package</phase>
+              <goals>
+                <goal>single</goal>
+              </goals>
+            </execution>
+          </executions>
+
+        </plugin>
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
@@ -127,10 +153,17 @@
           <version>3.7.1</version>
         </plugin>
         <plugin>
-          <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>3.0.0</version>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.0.2</version>
+          <configuration>
+            <archive>
+              <manifest>
+                <addClasspath>true</addClasspath>
+                <mainClass>com.persistent.tictactoe.App</mainClass> <!-- Replace com.example.MainClassName with the actual main class of your application -->
+              </manifest>
+            </archive>
+          </configuration>
         </plugin>
       </plugins>
-    </pluginManagement>
   </build>
 </project>

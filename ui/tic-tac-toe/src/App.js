@@ -22,11 +22,13 @@ const App = () => {
   const [gameState, setGameState] = useState("---------");
   const [message, setMessage] = useState("");
   const ws = useRef(null);
+  const apiUrl = process.env.REACT_APP_API_URL;
+
 
   useEffect(() => {
     if (gameId) {
       // Open WebSocket connection
-      ws.current = new WebSocket(`ws://localhost:8080/live/${gameId}`);
+      ws.current = new WebSocket(`${apiUrl}/${gameId}`);
 
       ws.current.onopen = () => {
         console.log('WebSocket connection opened');
@@ -72,7 +74,7 @@ const App = () => {
     }
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:8080/api/v1/play', { user_name: username });
+      const response = await axios.post(`${apiUrl}/api/v1/play`, { user_name: username });
       const data = response.data;
       if (data.status === 'SUCCESS') {
         setUserId(data.user_id);

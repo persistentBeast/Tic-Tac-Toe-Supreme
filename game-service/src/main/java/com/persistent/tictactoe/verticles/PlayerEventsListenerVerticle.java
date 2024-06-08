@@ -84,9 +84,12 @@ public class PlayerEventsListenerVerticle extends AbstractVerticle {
             }
         }
 
-        if (!gameState.get("game_status").equals("LIVE")) {
+        if (gameState.get("game_status").equals("LOADING")) {
             activityAckObject.add("status", "FAIL");
             activityAckObject.add("fail_reason", "Game is in loading state!");
+        } else if (gameState.get("game_status").equals("COMPLETED")) {
+            activityAckObject.add("status", "FAIL");
+            activityAckObject.add("fail_reason", "Game is over!");
         } else if (!userId.equals(turnOfUserId)) {
             activityAckObject.add("status", "FAIL");
             activityAckObject.add("fail_reason", "Its not your turn!");
@@ -148,6 +151,11 @@ public class PlayerEventsListenerVerticle extends AbstractVerticle {
         stateUpdateEvent.add("game_id", gameId);
         stateUpdateEvent.add("state", gameState.get("game_state"));
         stateUpdateEvent.add("status", gameState.get("game_status"));
+
+        if (gameState.get("game_status").equals("COMPLETED")) {
+            stateUpdateEvent.add("winner", gameState.get("winner"));
+
+        }
 
         if (gameState.get("game_status").equals("LOADING")) {
             stateUpdateEvent.add("loading_reason", String.valueOf("P1 : " + gameState.get("p1_status") +

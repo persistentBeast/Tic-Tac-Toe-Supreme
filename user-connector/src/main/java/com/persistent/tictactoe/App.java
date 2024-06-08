@@ -12,6 +12,7 @@ import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.CorsHandler;
 
 import java.util.UUID;
 
@@ -26,6 +27,21 @@ public class App extends AbstractVerticle {
     public void start() throws Exception {
 
         Router router = Router.router(vertx);
+
+        // Configure CORS
+        CorsHandler corsHandler = CorsHandler.create("*")
+                .addOrigin("http://localhost:3000")
+                .allowedMethod(io.vertx.core.http.HttpMethod.GET)
+                .allowedMethod(io.vertx.core.http.HttpMethod.POST)
+                .allowedMethod(io.vertx.core.http.HttpMethod.PUT)
+                .allowedMethod(io.vertx.core.http.HttpMethod.DELETE)
+                .allowedHeader("Access-Control-Allow-Method")
+                .allowedHeader("Access-Control-Allow-Origin")
+                .allowedHeader("Access-Control-Allow-Credentials")
+                .allowedHeader("Content-Type")
+                .allowCredentials(true);
+
+        router.route().handler(corsHandler);
 
         router.route().handler(BodyHandler.create());
 

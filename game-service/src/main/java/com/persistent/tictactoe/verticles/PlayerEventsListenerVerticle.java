@@ -138,6 +138,22 @@ public class PlayerEventsListenerVerticle extends AbstractVerticle {
         if (gameState.get("p1_status").equals("CONNECTED") && gameState.get("p2_status").equals("CONNECTED")) {
             gameState.put("game_status", "LIVE");
             gameState.put("updated_at", String.valueOf(System.currentTimeMillis()));
+
+            //Check for user did-connection
+            long currTime = System.currentTimeMillis();
+            long p1LastAck = Long.parseLong(gameState.get("p1_last_ack"));
+            long p2LastAck = Long.parseLong(gameState.get("p2_last_ack"));
+
+            if(currTime - p1LastAck >= 10000){
+                gameState.put("p1_status", "DIS-CONNECTED");
+                gameState.put("game_status", "LOADING");
+                gameState.put("updated_at", String.valueOf(System.currentTimeMillis()));
+            }
+            if(currTime - p2LastAck >= 10000){
+                gameState.put("p2_status", "DIS-CONNECTED");
+                gameState.put("game_status", "LOADING");
+                gameState.put("updated_at", String.valueOf(System.currentTimeMillis()));
+            }
         }
 
         int winner = checkWinner(gameState.get("game_state"));

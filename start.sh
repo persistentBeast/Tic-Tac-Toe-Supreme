@@ -7,8 +7,8 @@ command_exists() {
 
 
 # Load environment variables from .env file
-if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+if [ -f envs.env ]; then
+    export $(grep -v '^#' envs.env | xargs)
 else
     echo ".env file not found!"
     exit 1
@@ -32,10 +32,10 @@ else
 fi
 
 # Check if Hazelcast is installed
-cd ~
-cd hazelcast-3.12.12/bin
-
-sh start.sh
+#cd ~
+#cd hazelcast-3.12.12/bin
+#
+#sh start.sh
 
 # Check if Maven is installed
 if command_exists mvn; then
@@ -60,5 +60,5 @@ java -jar game-service-0.0.1-jar-with-dependencies.jar &
 echo "Starting React application..."
 
 # Assuming the React app is in app1 repository
-cd ~/apps/tic-tac-toe
-npm start
+#cd ~/apps/tic-tac-toe
+#npm start

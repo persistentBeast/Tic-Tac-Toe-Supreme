@@ -7,9 +7,9 @@ echo "Stopping Java applications..."
 pkill -f "java -jar"
 
 # Stop Hazelcast server
-echo "Stopping Hazelcast server..."
-cd ~/hazelcast-3.12.12/bin
-sh stop.sh
+#echo "Stopping Hazelcast server..."
+#cd ~/hazelcast-3.12.12/bin
+#sh stop.sh
 
 # Stop React application
 echo "Stopping React application..."
